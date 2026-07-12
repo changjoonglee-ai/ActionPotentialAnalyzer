@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>활동전위 좌표 추출기</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    margin:30px;
+}
+
+canvas{
+    border:1px solid gray;
+    cursor:crosshair;
+}
+
+table{
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th,td{
+    border:1px solid #888;
+    padding:5px 10px;
+    text-align:center;
+}
+
+button{
+    margin-top:20px;
+    padding:10px 20px;
+    font-size:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>활동전위 좌표 추출기</h2>
+
+<input type="file" id="upload">
+
+<br><br>
+
+<canvas id="canvas"></canvas>
+
+<br>
+
+<button onclick="downloadCSV()">CSV 저장</button>
+
+<table id="table">
+
+<tr>
+<th>번호</th>
+<th>시간(ms)</th>
+<th>막전위(mV)</th>
+</tr>
+
+</table>
+
+<script>
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+const img=new Image();
+
+let points=[];
+
+document.getElementById("upload").onchange=function(e){
+
+const file=e.target.files[0];
+
+img.src=URL.createObjectURL(file);
+
+};
+
+img.onload=function(){
+
+canvas.width=img.width;
+canvas.height=img.height;
+
+ctx.drawImage(img,0,0);
+
+points=[];
+
+document.getElementById("table").innerHTML=
+"<tr><th>번호</th><th>시간(ms)</th><th>막전위(mV)</th></tr>";
+
+}
+
+//------------------------------------
+// 좌표축 설정
+//------------------------------------
+
+// 사용자가 그림에 맞게 수정
+
+const xmin=40;
+const xmax=185;
+
+const ymin=20;
+const ymax=145;
+
+//------------------------------------
+
+canvas.onclick=function(e){
+
+const rect=canvas.getBoundingClientRect();
+
+const x=e.clientX-rect.left;
+const y=e.clientY-rect.top;
+
+ctx.beginPath();
+ctx.arc(x,y,3,0,2*Math.PI);
+ctx.fillStyle="red";
+ctx.fill();
+
+const time=((x-xmin)/(xmax-xmin))*4;
+
+const voltage=
+30-
+((y-ymin)/(ymax-ymin))*110;
+
+points.push([time,voltage]);
+
+updateTable();
+
+}
+
+function updateTable(){
+
+let html="<tr><th>번호</th><th>시간(ms)</th><th>막전위(mV)</th></tr>";
+
+for(let i=0;i<points.length;i++){
+
+html+="<tr>";
+
+html+="<td>"+(i+1)+"</td>";
+
+html+="<td>"+points[i][0].toFixed(3)+"</td>";
+
+html+="<td>"+points[i][1].toFixed(1)+"</td>";
+
+html+="</tr>";
+
+}
+
+document.getElementById("table").innerHTML=html;
+
+}
+
+function downloadCSV(){
+
+let csv="Time(ms),Voltage(mV)\n";
+
+for(let p of points){
+
+csv+=p[0].toFixed(3)+","+p[1].toFixed(2)+"\n";
+
+}
+
+const blob=new Blob([csv],{type:"text/csv"});
+
+const a=document.createElement("a");
+
+a.href=URL.createObjectURL(blob);
+
+a.download="ActionPotential.csv";
+
+a.click();
+
+}
+
+</script>
+
+</body>
+</html>
