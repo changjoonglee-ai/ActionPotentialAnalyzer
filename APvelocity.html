@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>신경 A 전도 시뮬레이터</title>
+<style>
+body{font-family:Arial;margin:20px;background:#f4f4f4}
+.wrap{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:10px}
+label{display:block;margin:8px 0}
+input{width:120px}
+canvas{border:1px solid #999;width:100%;height:400px}
+table{border-collapse:collapse}td{padding:4px 10px}
+</style></head><body><div class="wrap">
+<h2>신경 A 전도 및 활동전위 계산기</h2>
+<table>
+<tr><td>거리 X→Y (cm)</td><td><input id=d value=12 type=number step=0.1></td></tr>
+<tr><td>전도속도 (cm/ms)</td><td><input id=v value=6 type=number step=0.1></td></tr>
+<tr><td>자극 후 Y점에서 측정한 시간 (ms)</td><td><input id=t value=1.2 type=number step=0.01></td></tr>
+</table>
+<button onclick="calc()">계산</button>
+<h3>결과</h3>
+<div id=r></div>
+<canvas id=c width=800 height=400></canvas>
+</div>
+<script>
+const data=[
+[0,-70],[0.05,-70],[0.10,-70],[0.15,-70],[0.20,-70],[0.25,-70],[0.30,-70],[0.35,-70],[0.40,-70],[0.45,-70],
+[0.50,-70],[0.55,-69.8],[0.60,-69.5],[0.65,-69],[0.70,-68.5],[0.75,-67.8],[0.80,-67],[0.85,-66],[0.90,-64.5],[0.95,-62.5],
+[1.00,-60],[1.05,-56],[1.10,-51],[1.15,-45],[1.20,-38],[1.25,-28],[1.30,-16],[1.35,-2],[1.40,10],[1.45,18],
+[1.50,24],[1.55,28],[1.60,30],[1.65,29],[1.70,27],[1.75,24],[1.80,20],[1.85,14],[1.90,7],[1.95,-4],
+[2.00,-18],[2.05,-30],[2.10,-40],[2.15,-48],[2.20,-55],[2.25,-61],[2.30,-66],[2.35,-70],[2.40,-73],[2.45,-75],
+[2.50,-77],[2.55,-78],[2.60,-79],[2.65,-79.5],[2.70,-79.8],[2.75,-80],[2.80,-80],[2.85,-79.9],[2.90,-79.7],[2.95,-79.5],
+[3.00,-79],[3.05,-78.8],[3.10,-78.5],[3.15,-78],[3.20,-77.3],[3.25,-76.5],[3.30,-75.8],[3.35,-75],[3.40,-74],[3.45,-73.3],
+[3.50,-72.5],[3.55,-71.8],[3.60,-71.2],[3.65,-70.8],[3.70,-70.5],[3.75,-70.2],[3.80,-70],[3.85,-70],[3.90,-70],[3.95,-70],[4.00,-70]];
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+function mp(t){
+ if(t<=0)return -70;if(t>=4)return -70;
+ for(let i=0;i<data.length-1;i++){
+  let a=data[i],b=data[i+1];
+  if(t>=a[0]&&t<=b[0]){
+   let r=(t-a[0])/(b[0]-a[0]);
+   return a[1]+r*(b[1]-a[1]);
+  }
+ }
+}
+function draw(tt,vv){
+ ctx.clearRect(0,0,800,400);
+ ctx.strokeStyle="#000";
+ ctx.beginPath();ctx.moveTo(50,20);ctx.lineTo(50,350);ctx.lineTo(770,350);ctx.stroke();
+ctx.fillStyle="#000";ctx.font="12px Arial";
+for(let tt=0;tt<=4.0001;tt+=0.5){
+ let xx=50+tt/4*700;
+ ctx.beginPath();ctx.moveTo(xx,350);ctx.lineTo(xx,355);ctx.stroke();
+ ctx.fillText(tt.toFixed(1),xx-10,370);
+}
+ctx.fillText("시간 (ms)",690,392);
+[-80,-70,-55,0,30].forEach(v=>{
+ let yy=350-(v+80)/110*300;
+ ctx.beginPath();ctx.moveTo(45,yy);ctx.lineTo(50,yy);ctx.stroke();
+ ctx.fillText(v,10,yy+4);
+});
+ ctx.strokeStyle="blue";ctx.beginPath();
+ data.forEach((p,i)=>{
+ let x=50+p[0]/4*700;
+ let y=350-(p[1]+80)/110*300;
+ if(i==0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+ });
+ ctx.stroke();
+ let x=50+Math.min(tt,4)/4*700;
+ let y=350-(vv+80)/110*300;
+ ctx.strokeStyle="red";
+ ctx.beginPath();ctx.moveTo(x,20);ctx.lineTo(x,350);ctx.stroke();
+ ctx.fillStyle="red";ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();
+}
+function calc(){
+ let dist=parseFloat(d.value);
+ let vel=parseFloat(v.value);
+ let measured=parseFloat(t.value);
+
+ let delay=dist/vel;
+ let relative=measured-delay;
+
+ let vy;
+ if(relative<0){
+    vy=-70;
+ }else{
+    vy=mp(relative);
+ }
+
+ r.innerHTML=`전도지연 : <b>${delay.toFixed(3)} ms</b><br>
+ 측정시간 : <b>${measured.toFixed(3)} ms</b><br>
+ 활동전위 상대시간 : <b>${Math.max(relative,0).toFixed(3)} ms</b><br>
+ Y점 막전위 : <b>${vy.toFixed(1)} mV</b>`;
+
+ // 그래프에는 상대시간 위치를 표시
+ draw(Math.max(relative,0),vy);
+}
+calc();
+</script></body></html>
